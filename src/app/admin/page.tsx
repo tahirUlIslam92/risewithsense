@@ -1,142 +1,71 @@
+import { createRlsServerClient } from "@/infrastructure/supabase/client.server";
 import Link from "next/link";
-import { Navbar } from "@/components/shop/Navbar";
-import { Footer } from "@/components/shop/Footer";
-import { ProductCard } from "@/components/shop/ProductCard";
+import { Package, ShoppingBag, TrendingUp, DollarSign, ArrowUpRight, Plus } from "lucide-react";
 
-const featuredProducts = [
-  { id: "1", name: "Classic Chronograph", slug: "classic-chronograph", brand: "Rolex", price: 50000, primaryImage: null, isInStock: true, featured: true },
-  { id: "2", name: "Digital Pro", slug: "digital-pro", brand: "Casio", price: 15000, primaryImage: null, isInStock: true, featured: true },
-  { id: "3", name: "Smart Elite", slug: "smart-elite", brand: "Apple", price: 120000, primaryImage: null, isInStock: true, featured: true },
-  { id: "4", name: "Diver Edition", slug: "diver-edition", brand: "Omega", price: 75000, primaryImage: null, isInStock: false, featured: false },
-];
+export default async function AdminDashboard() {
+  const supabase = await createRlsServerClient();
+  const { count: products } = await supabase.from("products").select("*", { count: "exact", head: true }).eq("is_active", true);
+  const { count: orders } = await supabase.from("orders").select("*", { count: "exact", head: true });
+  const { count: pending } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending");
 
-const categories = [
-  { name: "Analog", slug: "analog", icon: "🕐", desc: "Classic timepieces" },
-  { name: "Digital", slug: "digital", icon: "📟", desc: "Modern displays" },
-  { name: "Chronograph", slug: "chronograph", icon: "⏱️", desc: "Precision timing" },
-  { name: "Smart", slug: "smart", icon: "⌚", desc: "Connected watches" },
-];
+  const stats = [
+    { label: "Active Products", value: products || 0, change: "+12%", icon: Package, color: "bg-blue-50 text-blue-600" },
+    { label: "Total Orders", value: orders || 0, change: "+8%", icon: ShoppingBag, color: "bg-emerald-50 text-emerald-600" },
+    { label: "Pending", value: pending || 0, change: "Action needed", icon: TrendingUp, color: "bg-amber-50 text-amber-600" },
+    { label: "Revenue", value: "Rs. 0", change: "This month", icon: DollarSign, color: "bg-purple-50 text-purple-600" },
+  ];
 
-export default function HomePage() {
   return (
-    <div className="min-h-screen bg-stone-50">
-      <Navbar />
-
-      {/* ============ HERO ============ */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white to-stone-50">
-        <div className="mx-auto max-w-7xl px-4 py-16 md:py-24 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            Premium Collection
-          </div>
-          
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-stone-900 leading-[1.05]">
-            Timeless
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-amber-600">
-              Elegance
-            </span>
-          </h1>
-          
-          <p className="mt-4 text-base md:text-lg text-stone-500 max-w-md mx-auto">
-            Curated premium watches. Authentic timepieces delivered across Pakistan.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-            <Link
-              href="/products"
-              className="inline-flex items-center justify-center px-8 py-3.5 bg-stone-900 text-white rounded-full font-semibold hover:bg-stone-800 transition-all active:scale-95"
-            >
-              Shop Collection
-              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
-            <Link
-              href="#featured"
-              className="inline-flex items-center justify-center px-8 py-3.5 border-2 border-stone-200 rounded-full font-semibold text-stone-700 hover:border-stone-400 transition-all active:scale-95"
-            >
-              View Featured
-            </Link>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-10 text-xs text-stone-400">
-            {["✓ COD Available", "✓ Nationwide Delivery", "✓ 7-Day Returns"].map((t) => (
-              <span key={t} className="flex items-center gap-1">{t}</span>
-            ))}
-          </div>
+    <div>
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-[#1E293B]">Dashboard</h2>
+          <p className="text-sm text-[#94A3B8] mt-0.5">Overview of your store</p>
         </div>
-      </section>
-
-      {/* ============ CATEGORIES ============ */}
-      <section className="mx-auto max-w-7xl px-4 py-12 md:py-16">
-        <h2 className="text-xl md:text-2xl font-bold text-stone-900 text-center mb-8">
-          Browse Categories
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {categories.map((cat) => (
-            <Link
-              key={cat.slug}
-              href={`/products?type=${cat.slug}`}
-              className="group p-4 md:p-6 rounded-2xl bg-white hover:shadow-lg hover:shadow-stone-900/5 transition-all duration-300 active:scale-95 border border-stone-100"
-            >
-              <span className="text-3xl md:text-4xl block mb-3">{cat.icon}</span>
-              <h3 className="text-sm md:text-base font-bold text-stone-900">{cat.name}</h3>
-              <p className="text-xs text-stone-400 mt-1 hidden md:block">{cat.desc}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ============ FEATURED PRODUCTS ============ */}
-      <section id="featured" className="mx-auto max-w-7xl px-4 py-12 md:py-16">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <span className="text-amber-600 text-xs font-semibold uppercase tracking-wider">Curated</span>
-            <h2 className="text-xl md:text-2xl font-bold text-stone-900 mt-1">Featured Watches</h2>
-          </div>
-          <Link href="/products" className="hidden sm:flex items-center gap-1 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors">
-            View All
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-          {featuredProducts.map((product, i) => (
-            <ProductCard key={product.id} product={product} priority={i < 2} />
-          ))}
-        </div>
-
-        <Link
-          href="/products"
-          className="sm:hidden mt-6 flex items-center justify-center w-full py-3 border-2 border-stone-200 rounded-xl font-semibold text-stone-700 hover:border-stone-400 transition-colors text-sm"
-        >
-          View All Watches
+        <Link href="/admin/products/new" className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1E293B] text-white text-sm font-medium rounded-xl hover:bg-[#8B7355] transition-all shadow-lg shadow-[#1E293B]/10">
+          <Plus className="w-4 h-4" />
+          New Product
         </Link>
-      </section>
+      </div>
 
-      {/* ============ BENEFITS BAR ============ */}
-      <section className="bg-stone-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { icon: "✓", title: "Authentic", desc: "100% genuine" },
-              { icon: "📦", title: "COD", desc: "Pay on delivery" },
-              { icon: "🔄", title: "Returns", desc: "7-day policy" },
-              { icon: "🚚", title: "Fast", desc: "2-5 day delivery" },
-            ].map((b) => (
-              <div key={b.title}>
-                <div className="text-2xl mb-2">{b.icon}</div>
-                <h3 className="font-semibold text-sm">{b.title}</h3>
-                <p className="text-stone-400 text-xs mt-0.5">{b.desc}</p>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-white rounded-2xl p-5 border border-[#E2E8F0] hover:shadow-lg hover:shadow-[#1E293B]/5 transition-all group">
+            <div className="flex items-start justify-between mb-3">
+              <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center`}>
+                <stat.icon className="w-5 h-5" strokeWidth={1.5} />
               </div>
-            ))}
+              <ArrowUpRight className="w-4 h-4 text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <p className="text-3xl font-bold text-[#1E293B] tracking-tight">{stat.value}</p>
+            <div className="flex items-center justify-between mt-1.5">
+              <p className="text-xs text-[#94A3B8]">{stat.label}</p>
+              <p className="text-[10px] text-emerald-500 font-medium">{stat.change}</p>
+            </div>
           </div>
-        </div>
-      </section>
+        ))}
+      </div>
 
-      <Footer />
+      {/* Quick Actions */}
+      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
+        <h3 className="text-sm font-semibold text-[#1E293B] mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Add Product", href: "/admin/products/new", icon: Plus },
+            { label: "View Products", href: "/admin/products", icon: Package },
+            { label: "View Orders", href: "/admin/orders", icon: ShoppingBag },
+            { label: "Visit Store", href: "/", icon: ArrowUpRight },
+          ].map((action) => (
+            <Link key={action.label} href={action.href}
+              className="flex flex-col items-center gap-2 p-4 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] transition-colors text-center">
+              <action.icon className="w-5 h-5 text-[#64748B]" strokeWidth={1.5} />
+              <span className="text-xs font-medium text-[#1E293B]">{action.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
