@@ -25,7 +25,9 @@ export function useAuth() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: "https://risewithsense.vercel.app",
+        redirectTo: isLocal
+          ? "http://localhost:3000"
+          : "https://risewithsense.vercel.app",
       },
     });
   };
