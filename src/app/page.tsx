@@ -5,6 +5,7 @@ import { Footer } from "@/components/shop/Footer";
 import { BottomNav } from "@/components/shop/BottomNav";
 import { createRlsServerClient } from "@/infrastructure/supabase/client.server";
 import { CATEGORY_LIST, getCategoryIcon } from "@/lib/categoryIcons";
+import GoogleSignInGate from "@/components/shop/GoogleSignInGate";
 
 export const metadata = {
   title: "Rise With Sense — Premium Lifestyle Store | Pakistan",
@@ -25,6 +26,9 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
       <Navbar />
+
+      {/* Google Sign-In Gate */}
+      <GoogleSignInGate />
 
       {/* HERO */}
       <section className="relative px-4 pt-6 pb-12 md:py-20 text-center">
@@ -86,7 +90,6 @@ export default async function HomePage() {
                 href={`/products/${p.slug}`}
                 className="group bg-white rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.1)] transition-all duration-700 ease-out"
               >
-                {/* Image Container */}
                 <div className="relative aspect-square bg-[#F8F5F0] flex items-center justify-center overflow-hidden">
                   {p.images && p.images.length > 0 ? (
                     <img
@@ -100,11 +103,7 @@ export default async function HomePage() {
                       <Icon className="w-12 h-12 text-[#8B7355]/30 group-hover:text-[#8B7355]/50 transition-colors duration-700" strokeWidth={1.5} />
                     </div>
                   )}
-
-                  {/* Dark Gradient Overlay on Hover */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-                  {/* "Take a Closer Look" Button */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out z-10">
                     <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-medium text-[#1A1A1A] tracking-wide shadow-lg hover:bg-[#8B7355] hover:text-white hover:scale-105 transition-all duration-300 whitespace-nowrap">
                       Take a Closer Look
@@ -112,8 +111,6 @@ export default async function HomePage() {
                     </span>
                   </div>
                 </div>
-
-                {/* Product Info */}
                 <div className="p-3">
                   <p className="text-[10px] uppercase tracking-wider text-[#8B7355] font-semibold">{p.brand}</p>
                   <h3 className="text-xs font-medium line-clamp-1 mt-0.5">{p.name}</h3>
