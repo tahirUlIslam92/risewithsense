@@ -1,12 +1,13 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { addToCart } from "@/app/actions/cart";
+import { useCartStore } from "@/hooks/useCartStore";
 import { useState } from "react";
 import { Check } from "lucide-react";
 
 export function AddToCartButton({ product }: { product: any }) {
   const { user, signInWithGoogle } = useAuth();
+  const { addItem } = useCartStore();
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -17,13 +18,10 @@ export function AddToCartButton({ product }: { product: any }) {
     }
 
     setLoading(true);
-    const result = await addToCart(product.id);
+    await addItem(product.id);
     setLoading(false);
-
-    if (result.success) {
-      setAdded(true);
-      setTimeout(() => setAdded(false), 2000);
-    }
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   return (
