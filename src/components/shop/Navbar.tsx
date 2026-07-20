@@ -19,6 +19,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const pathname = usePathname();
   const { user, signInWithGoogle } = useAuth();
   const { items, loading, userId, setUserId, fetchFromDB, getCount } = useCartStore();
@@ -38,15 +39,21 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close drawer on route change
   useEffect(() => {
     setIsOpen(false);
     setCartOpen(false);
   }, [pathname]);
 
+  const closeDrawer = () => {
+    setClosing(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setClosing(false);
+    }, 150);
+  };
+
   const cartCount = getCount();
 
-  // Lock body scroll when drawer open
   useEffect(() => {
     if (isOpen || cartOpen) {
       document.body.style.overflow = "hidden";
@@ -65,9 +72,8 @@ export function Navbar() {
       <header className={`sticky top-0 z-50 transition-all bg-white ${isScrolled ? "shadow-sm" : ""}`}>
         <nav className="mx-auto max-w-7xl px-4 md:px-6">
           <div className="flex h-14 md:h-16 items-center justify-between">
-            {/* Hamburger + Logo */}
             <div className="flex items-center gap-3">
-              <button onClick={() => setIsOpen(true)} className="md:hidden p-2 -ml-2" aria-label="Open menu">
+              <button onClick={() => setIsOpen(true)} className="md:hidden p-2 -ml-2 active:scale-90 transition-transform" aria-label="Open menu">
                 <Menu className="w-5 h-5 text-[#1A1A1A]" strokeWidth={1.5} />
               </button>
               <Link href="/" className="flex items-center gap-2">
@@ -77,27 +83,27 @@ export function Navbar() {
               </Link>
             </div>
 
-            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-1">
               {LINKS.map((link) => {
                 const isActive = pathname.includes(link.href.split("=")[1]);
                 return (
                   <Link key={link.href} href={link.href}
-                    className={`px-3 py-1.5 text-xs uppercase tracking-wider font-medium rounded-full transition-colors ${isActive ? "bg-[#F5F0E8] text-[#8B7355]" : "text-[#666] hover:text-[#1A1A1A]"}`}>
+                    className={`px-3 py-1.5 text-xs uppercase tracking-wider font-medium rounded-full transition-colors active:scale-95 ${
+                      isActive ? "bg-[#F5F0E8] text-[#8B7355]" : "text-[#666] hover:text-[#1A1A1A]"
+                    }`}>
                     {link.label}
                   </Link>
                 );
               })}
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-3">
               {user ? (
                 <>
                   <Link href="/my-orders" className="hidden md:flex items-center gap-1.5 text-xs text-[#666] hover:text-[#8B7355] uppercase tracking-wider font-medium transition-colors">
                     <Package className="w-3.5 h-3.5" />My Orders
                   </Link>
-                  <button onClick={() => setCartOpen(true)} className="relative p-2" aria-label="Open cart">
+                  <button onClick={() => setCartOpen(true)} className="relative p-2 active:scale-90 transition-transform" aria-label="Open cart">
                     <ShoppingBag className="w-5 h-5 text-[#1A1A1A]" strokeWidth={1.5} />
                     {cartCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-[#8B7355] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -107,7 +113,7 @@ export function Navbar() {
                   </button>
                 </>
               ) : (
-                <button onClick={signInWithGoogle} className="text-xs text-[#8B7355] font-medium">Sign In</button>
+                <button onClick={signInWithGoogle} className="text-xs text-[#8B7355] font-medium active:scale-95 transition-transform">Sign In</button>
               )}
             </div>
           </div>
@@ -115,22 +121,21 @@ export function Navbar() {
       </header>
 
       {/* Mobile Drawer */}
-      {isOpen && (
+      {(isOpen || closing) && (
         <div className="fixed inset-0 z-[100] md:hidden">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsOpen(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200"
+            onClick={closeDrawer} />
           
-          {/* Drawer */}
-          <div className="absolute top-0 left-0 h-full w-[85%] max-w-sm bg-white shadow-2xl animate-in slide-in-from-left duration-300">
-            {/* Drawer Header */}
+          <div className={`absolute top-0 left-0 h-full w-[85%] max-w-sm bg-white shadow-2xl transition-transform duration-200 ${
+            closing ? "-translate-x-full" : "translate-x-0"
+          }`}>
             <div className="flex items-center justify-between p-5 border-b border-[#EEE]">
               <span className="font-bold text-lg text-[#1A1A1A]">Menu</span>
-              <button onClick={() => setIsOpen(false)} className="p-2 -mr-2 rounded-full hover:bg-[#F5F0E8] active:scale-90 transition-all">
+              <button onClick={closeDrawer} className="p-2 -mr-2 rounded-full hover:bg-[#F5F0E8] active:scale-90 active:bg-[#F0EBE4] transition-all">
                 <X className="w-5 h-5 text-[#666]" strokeWidth={1.5} />
               </button>
             </div>
 
-            {/* Drawer Links */}
             <div className="p-4 space-y-1 overflow-y-auto">
               {LINKS.map((link) => {
                 const isActive = pathname.includes(link.href.split("=")[1]);
@@ -138,8 +143,8 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    onClick={() => setIsOpen(false)}
-                    className={`flex items-center px-4 py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] ${
+                    onClick={closeDrawer}
+                    className={`flex items-center px-4 py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.97] active:shadow-inner ${
                       isActive
                         ? "bg-[#F5F0E8] text-[#8B7355]"
                         : "text-[#666] hover:bg-[#F8F5F0] hover:text-[#1A1A1A] active:bg-[#F0EBE4]"
@@ -153,17 +158,16 @@ export function Navbar() {
               {user && (
                 <Link
                   href="/my-orders"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2 px-4 py-3.5 rounded-xl text-sm font-medium text-[#666] hover:bg-[#F8F5F0] hover:text-[#1A1A1A] active:bg-[#F0EBE4] active:scale-[0.97] transition-all mt-2 border-t border-[#EEE] pt-4"
+                  onClick={closeDrawer}
+                  className="flex items-center gap-2 px-4 py-3.5 rounded-xl text-sm font-medium text-[#666] hover:bg-[#F8F5F0] hover:text-[#1A1A1A] active:bg-[#F0EBE4] active:scale-[0.97] active:shadow-inner transition-all mt-2 border-t border-[#EEE] pt-4"
                 >
-                  <Package className="w-4 h-4" />
-                  My Orders
+                  <Package className="w-4 h-4" />My Orders
                 </Link>
               )}
 
               {!user && (
                 <button
-                  onClick={() => { signInWithGoogle(); setIsOpen(false); }}
+                  onClick={() => { signInWithGoogle(); closeDrawer(); }}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-medium bg-[#1A1A1A] text-white active:scale-[0.97] transition-all mt-2 border-t border-[#EEE]"
                 >
                   Sign in with Google
@@ -178,10 +182,10 @@ export function Navbar() {
       {cartOpen && (
         <div className="fixed inset-0 z-[100]">
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setCartOpen(false)} />
-          <div className="absolute top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="absolute top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
             <div className="flex items-center justify-between p-4 border-b border-[#EEE]">
               <h3 className="font-semibold text-[#1A1A1A]">Cart ({cartCount})</h3>
-              <button onClick={() => setCartOpen(false)} className="p-2 rounded-full hover:bg-[#F5F0E8] active:scale-90 transition-all">
+              <button onClick={() => setCartOpen(false)} className="p-2 rounded-full hover:bg-[#F5F0E8] active:scale-90 active:bg-[#F0EBE4] transition-all">
                 <X className="w-5 h-5 text-[#666]" strokeWidth={1.5} />
               </button>
             </div>
@@ -252,7 +256,7 @@ export function Navbar() {
             const isActive = pathname === item.href;
             return (
               <Link key={item.label} href={item.href}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-90 ${
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-90 active:shadow-inner ${
                   isActive ? "text-[#8B7355]" : "text-[#999]"
                 }`}>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
