@@ -46,7 +46,24 @@ export async function removeFromCart(productId: string) {
     .delete()
     .eq("user_id", user.id)
     .eq("product_id", productId);
-    
+
+  revalidatePath("/cart");
+  return { success: true };
+}
+
+export async function updateCartQuantity(productId: string, quantity: number) {
+  if (quantity < 1) return removeFromCart(productId);
+
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  await (supabase as any)
+    .from("cart_items")
+    .update({ quantity, updated_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .eq("product_id", productId);
+
   revalidatePath("/cart");
   return { success: true };
 }

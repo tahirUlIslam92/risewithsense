@@ -5,37 +5,39 @@ import { Navbar } from "@/components/shop/Navbar";
 import { Footer } from "@/components/shop/Footer";
 import { BottomNav } from "@/components/shop/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
-import { getCartItems, removeFromCart } from "@/app/actions/cart";
+import { getCartItems, removeFromCart, updateCartQuantity } from "@/app/actions/cart";
 import Link from "next/link";
-import { ShoppingBag, X } from "lucide-react";
+import { ShoppingBag, X, Minus, Plus } from "lucide-react";
 
 function CartContent() {
   const { user, signInWithGoogle } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchCart = async () => {
+    if (!user) return;
+    const data = await getCartItems();
+    setItems(data || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (user) {
-      getCartItems().then(data => {
-        setItems(data || []);
-        setLoading(false);
-      });
+      fetchCart();
     } else {
       setLoading(false);
     }
   }, [user]);
 
-  const handleCheckout = () => {
-    if (user) {
-      window.location.href = "/checkout";
-    } else {
-      signInWithGoogle();
-    }
-  };
-
   const handleRemove = async (productId: string) => {
     await removeFromCart(productId);
     setItems(prev => prev.filter(i => i.product_id !== productId));
+  };
+
+  const handleQuantity = async (productId: string, newQty: number) => {
+    if (newQty < 1) return handleRemove(productId);
+    await updateCartQuantity(productId, newQty);
+    setItems(prev => prev.map(i => i.product_id === productId ? { ...i, quantity: newQty } : i));
   };
 
   if (!user) {
@@ -43,6 +45,7 @@ function CartContent() {
       <main className="max-w-2xl mx-auto px-4 pt-24 pb-20 text-center">
         <ShoppingBag className="w-16 h-16 mx-auto mb-6 text-[#8B7355]/30" strokeWidth={1} />
         <h1 className="text-xl font-bold mb-4">Sign in to view your cart</h1>
+        <p className="text-sm text-[#999] mb-6">Your cart syncs across all your devices.</p>
         <button onClick={signInWithGoogle} className="inline-flex items-center gap-2 px-8 py-3 bg-[#1A1A1A] text-white text-sm font-medium rounded-full hover:bg-[#8B7355] transition-colors">
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -57,11 +60,7 @@ function CartContent() {
   }
 
   if (loading) {
-    return (
-      <main className="max-w-2xl mx-auto px-4 pt-24 pb-20 text-center">
-        <p className="text-[#999]">Loading cart...</p>
-      </main>
-    );
+    return <main className="max-w-2xl mx-auto px-4 pt-24 pb-20 text-center"><p className="text-[#999]">Loading cart...</p></main>;
   }
 
   if (items.length === 0) {
@@ -69,9 +68,7 @@ function CartContent() {
       <main className="max-w-2xl mx-auto px-4 pt-24 pb-20 text-center">
         <ShoppingBag className="w-16 h-16 mx-auto mb-6 text-[#8B7355]/30" strokeWidth={1} />
         <h1 className="text-xl font-bold mb-4">Your cart is empty</h1>
-        <Link href="/products" className="inline-block px-8 py-3 bg-[#1A1A1A] text-white text-xs uppercase tracking-wider rounded-full hover:bg-[#8B7355] transition-colors">
-          Continue Shopping
-        </Link>
+        <Link href="/products" className="inline-block px-8 py-3 bg-[#1A1A1A] text-white text-xs uppercase tracking-wider rounded-full hover:bg-[#8B7355] transition-colors">Continue Shopping</Link>
       </main>
     );
   }
@@ -93,10 +90,18 @@ function CartContent() {
               <p className="text-[10px] uppercase text-[#8B7355] font-semibold">{item.products.brand}</p>
               <p className="text-sm font-medium">{item.products.name}</p>
               <p className="text-sm font-bold mt-0.5">Rs. {Number(item.products.price).toLocaleString()}</p>
-              <p className="text-xs text-[#999]">Qty: {item.quantity}</p>
-              <button onClick={() => handleRemove(item.product_id)} className="mt-2 flex items-center gap-1 text-xs text-red-500 uppercase">
-                <X className="w-3 h-3" strokeWidth={2} /> Remove
-              </button>
+              <div className="flex items-center gap-3 mt-2">
+                <button onClick={() => handleQuantity(item.product_id, item.quantity - 1)} className="w-7 h-7 rounded-full border border-[#EEE] flex items-center justify-center hover:border-[#8B7355]">
+                  <Minus className="w-3 h-3" strokeWidth={2} />
+                </button>
+                <span className="text-sm w-5 text-center">{item.quantity}</span>
+                <button onClick={() => handleQuantity(item.product_id, item.quantity + 1)} className="w-7 h-7 rounded-full border border-[#EEE] flex items-center justify-center hover:border-[#8B7355]">
+                  <Plus className="w-3 h-3" strokeWidth={2} />
+                </button>
+                <button onClick={() => handleRemove(item.product_id)} className="ml-auto flex items-center gap-1 text-xs text-red-500 uppercase">
+                  <X className="w-3 h-3" strokeWidth={2} /> Remove
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -106,9 +111,9 @@ function CartContent() {
         <div className="flex justify-between"><span className="text-[#999]">Shipping</span><span>{shipping === 0 ? <span className="text-emerald-600">Free</span> : `Rs. ${shipping}`}</span></div>
         <div className="flex justify-between font-bold text-lg pt-2 border-t border-[#EEE]"><span>Total</span><span>Rs. {total.toLocaleString()}</span></div>
       </div>
-      <button onClick={handleCheckout} className="w-full mt-4 py-4 bg-[#1A1A1A] text-white text-center text-xs uppercase tracking-wider rounded-full font-medium hover:bg-[#8B7355] transition-colors">
+      <Link href="/checkout" className="block w-full mt-4 py-4 bg-[#1A1A1A] text-white text-center text-xs uppercase tracking-wider rounded-full font-medium hover:bg-[#8B7355] transition-colors">
         Proceed to Checkout
-      </button>
+      </Link>
     </main>
   );
 }
