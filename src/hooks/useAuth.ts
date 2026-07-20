@@ -21,16 +21,13 @@ export function useAuth() {
   }, []);
 
   const signInWithGoogle = async () => {
-    const isLocal = window.location.hostname === "localhost";
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: isLocal
-          ? "http://localhost:3000"
-          : "https://risewithsense.vercel.app",
-      },
-    });
-  };
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}`,
+    },
+  });
+};
 
   const signOut = async () => {
     await supabase.auth.signOut();
