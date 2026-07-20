@@ -17,51 +17,46 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[#1E293B]">Dashboard</h2>
-          <p className="text-sm text-[#94A3B8] mt-0.5">Overview of your store</p>
+          <h2 className="text-2xl font-bold text-[#1C1917]">Dashboard</h2>
+          <p className="mt-0.5 text-sm text-[#8A7F72]">Overview of your store</p>
         </div>
-        <Link href="/admin/products/new" className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1E293B] text-white text-sm font-medium rounded-xl hover:bg-[#8B7355] transition-all shadow-lg shadow-[#1E293B]/10">
-          <Plus className="w-4 h-4" />
-          New Product
+        <Link href="/admin/products/new" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#6B5638] to-[#8B7355] px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-[#6B5638]/20 transition-all hover:shadow-xl hover:shadow-[#6B5638]/30">
+          <Plus className="h-4 w-4" />New Product
         </Link>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-2xl p-5 border border-[#E2E8F0] hover:shadow-lg hover:shadow-[#1E293B]/5 transition-all group">
-            <div className="flex items-start justify-between mb-3">
-              <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center`}>
-                <stat.icon className="w-5 h-5" strokeWidth={1.5} />
+          <div key={stat.label} className="group rounded-2xl border border-[#E8E2D9] bg-white p-5 transition-all hover:shadow-lg hover:shadow-[#1C1917]/5">
+            <div className="mb-3 flex items-start justify-between">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}>
+                <stat.icon className="h-5 w-5" strokeWidth={1.5} />
               </div>
-              <ArrowUpRight className="w-4 h-4 text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ArrowUpRight className="h-4 w-4 text-[#B3A896] opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
-            <p className="text-3xl font-bold text-[#1E293B] tracking-tight">{stat.value}</p>
-            <div className="flex items-center justify-between mt-1.5">
-              <p className="text-xs text-[#94A3B8]">{stat.label}</p>
-              <p className="text-[10px] text-emerald-500 font-medium">{stat.change}</p>
+            <p className="text-3xl font-bold tracking-tight text-[#1C1917]">{stat.value}</p>
+            <div className="mt-1.5 flex items-center justify-between">
+              <p className="text-xs text-[#8A7F72]">{stat.label}</p>
+              <p className="text-[10px] font-medium text-emerald-500">{stat.change}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6">
-        <h3 className="text-sm font-semibold text-[#1E293B] mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="rounded-2xl border border-[#E8E2D9] bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold text-[#1C1917]">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
             { label: "Add Product", href: "/admin/products/new", icon: Plus },
             { label: "View Products", href: "/admin/products", icon: Package },
             { label: "View Orders", href: "/admin/orders", icon: ShoppingBag },
             { label: "Visit Store", href: "/", icon: ArrowUpRight },
           ].map((action) => (
-            <Link key={action.label} href={action.href}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] transition-colors text-center">
-              <action.icon className="w-5 h-5 text-[#64748B]" strokeWidth={1.5} />
-              <span className="text-xs font-medium text-[#1E293B]">{action.label}</span>
+            <Link key={action.label} href={action.href} className="flex flex-col items-center gap-2 rounded-xl bg-[#FAF7F2] p-4 text-center transition-colors hover:bg-[#F1EBE1]">
+              <action.icon className="h-5 w-5 text-[#8B7355]" strokeWidth={1.5} />
+              <span className="text-xs font-medium text-[#1C1917]">{action.label}</span>
             </Link>
           ))}
         </div>
