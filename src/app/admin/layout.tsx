@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Package, ShoppingBag, LogOut, ChevronRight, Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Package, ShoppingBag, LogOut, Menu, X, ChevronRight, Sparkles, ArrowLeft } from "lucide-react";
 import { adminLogout } from "@/lib/supabase/admin";
 
 const navItems = [
@@ -11,86 +12,224 @@ const navItems = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
 ];
 
+// Single source of truth for "is this nav item active" — used by both the
+// sidebar highlight AND the header title, so they can never disagree again.
+function isRouteActive(pathname: string, href: string) {
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+function NavLink({
+  href,
+  label,
+  Icon,
+  active,
+  onClick,
+  variant = "desktop",
+}: {
+  href: string;
+  label: string;
+  Icon: typeof LayoutDashboard;
+  active: boolean;
+  onClick?: () => void;
+  variant?: "desktop" | "mobile";
+}) {
+  const isMobile = variant === "mobile";
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`group relative flex items-center gap-3 overflow-hidden rounded-2xl text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B5638] focus-visible:ring-offset-2 ${
+        isMobile ? "px-4 py-3.5 active:scale-[0.98]" : "px-4 py-3"
+      } ${
+        active
+          ? "bg-gradient-to-br from-[#6B5638] to-[#8B7355] text-white shadow-lg shadow-[#6B5638]/20"
+          : "text-[#665C52] hover:bg-[#F1EBE1] hover:text-[#1C1917] active:bg-[#EDE8E0]"
+      }`}
+    >
+      {/* left accent tick — a small nod to a watch hand, only visible on the active item */}
+      {active && (
+        <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-white/70" />
+      )}
+      <Icon
+        className={`h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+          active ? "text-white" : "text-[#A0937F] group-hover:text-[#6B5638]"
+        }`}
+        strokeWidth={1.5}
+      />
+      <span className="flex-1">{label}</span>
+      {active && !isMobile && <ChevronRight className="h-4 w-4 opacity-70" strokeWidth={2} />}
+    </Link>
+  );
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const activeItem = navItems.find((item) => isRouteActive(pathname, item.href));
+  const pageTitle = activeItem?.label ?? "Dashboard";
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:flex-col w-64 bg-white border-r border-[#E2E8F0] min-h-screen sticky top-0">
-        <div className="p-6">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-[#8B7355] rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">R</span>
+    <div className="flex min-h-screen bg-[#F7F5F1]">
+      {/* ============ DESKTOP SIDEBAR ============ */}
+      <aside className="sticky top-0 hidden min-h-screen w-72 flex-col border-r border-[#E8E2D9] bg-white lg:flex">
+        {/* Logo */}
+        <div className="p-8">
+          <Link href="/admin" className="group flex items-center gap-3">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6B5638] to-[#8B7355] shadow-lg shadow-[#6B5638]/20 transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-[#6B5638]/30">
+              {/* faint bezel ring — quiet nod to the watch-store brand, respects reduced motion */}
+              <span className="motion-safe:animate-spin-slow absolute inset-[-3px] rounded-2xl border border-dashed border-[#8B7355]/40" />
+              <Sparkles className="h-5 w-5 text-white" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#1E293B]">RiseWithSense</p>
-              <p className="text-[10px] text-[#94A3B8] uppercase tracking-wider">Admin</p>
+              <p className="text-base font-bold tracking-tight text-[#1C1917]">RiseWithSense</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#A0937F]">Admin Panel</p>
             </div>
           </Link>
         </div>
 
-        <nav className="flex-1 px-3 space-y-0.5">
+        {/* Navigation */}
+        <nav className="flex-1 space-y-1 px-5">
+          <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#A0937F]">Main Menu</p>
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#1E293B] transition-all group">
-              <item.icon className="w-4 h-4 text-[#94A3B8] group-hover:text-[#8B7355] transition-colors" strokeWidth={1.5} />
-              <span className="flex-1">{item.label}</span>
-              <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-[#94A3B8]" />
-            </Link>
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              Icon={item.icon}
+              active={isRouteActive(pathname, item.href)}
+            />
           ))}
         </nav>
 
-        <div className="p-3 border-t border-[#E2E8F0]">
+        {/* User + Logout */}
+        <div className="border-t border-[#E8E2D9] p-5">
+          <div className="mb-4 flex items-center gap-3 px-2">
+            <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#6B5638] to-[#8B7355] text-xs font-bold text-white shadow-md">
+              A
+              {/* live status dot */}
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold text-[#1C1917]">Admin</p>
+              <p className="text-[10px] text-[#A0937F]">Super Admin</p>
+            </div>
+          </div>
           <form action={adminLogout}>
-            <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-[#94A3B8] hover:bg-red-50 hover:text-red-500 transition-all">
-              <LogOut className="w-4 h-4" />Sign Out
+            <button className="group flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-[#A0937F] transition-all duration-300 hover:bg-red-50 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B5638] focus-visible:ring-offset-2">
+              <LogOut className="h-4 w-4 transition-transform duration-300 group-hover:rotate-12" strokeWidth={1.5} />
+              Sign Out
             </button>
           </form>
         </div>
       </aside>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      {/* ============ MAIN CONTENT ============ */}
+      <div className="flex min-h-screen flex-1 flex-col">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-[#E2E8F0] px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setMobileOpen(true)} className="md:hidden p-2 -ml-2 rounded-lg hover:bg-[#F1F5F9] active:scale-90 transition-all">
-              <Menu className="w-5 h-5 text-[#64748B]" />
-            </button>
-            <h1 className="text-sm font-semibold text-[#1E293B]">Admin Panel</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#8B7355] flex items-center justify-center text-white text-xs font-bold">A</div>
+        <header
+          className={`sticky top-0 z-30 transition-all duration-300 ${
+            scrolled
+              ? "border-b border-[#E8E2D9] bg-white/90 shadow-sm backdrop-blur-2xl"
+              : "border-b border-transparent bg-white"
+          }`}
+        >
+          <div className="flex h-16 items-center justify-between px-6">
+            <div className="flex items-center gap-4">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="-ml-2 rounded-xl p-2 transition-all hover:bg-[#F1EBE1] active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B5638] lg:hidden"
+                aria-label="Open menu"
+              >
+                <Menu className="h-5 w-5 text-[#1C1917]" strokeWidth={1.5} />
+              </button>
+              <h1 className="text-sm font-bold text-[#1C1917]">{pageTitle}</h1>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Link
+                href="/"
+                className="hidden items-center gap-2 text-xs font-medium text-[#A0937F] transition-colors hover:text-[#6B5638] sm:flex"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Visit Store
+              </Link>
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#6B5638] to-[#8B7355] text-xs font-bold text-white shadow-md">
+                A
+              </div>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* ============ MOBILE DRAWER ============ */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[200] md:hidden">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="absolute top-0 left-0 h-full w-[80%] max-w-sm bg-white shadow-2xl animate-in slide-in-from-left duration-200">
-            <div className="flex items-center justify-between p-5 border-b border-[#E2E8F0]">
-              <span className="font-bold text-sm text-[#1E293B]">Admin Menu</span>
-              <button onClick={() => setMobileOpen(false)} className="p-2 rounded-full hover:bg-[#F1F5F9] active:scale-90 transition-all">
-                <X className="w-5 h-5 text-[#64748B]" strokeWidth={1.5} />
+        <div className="fixed inset-0 z-[200] lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute left-0 top-0 h-full w-[85%] max-w-sm animate-in slide-in-from-left bg-white shadow-2xl duration-200">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between border-b border-[#E8E2D9] p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#6B5638] to-[#8B7355] shadow-md">
+                  <Sparkles className="h-4 w-4 text-white" strokeWidth={1.5} />
+                </div>
+                <span className="text-sm font-bold text-[#1C1917]">Admin Panel</span>
+              </div>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="rounded-xl p-2 transition-all hover:bg-[#F1EBE1] active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6B5638]"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5 text-[#665C52]" strokeWidth={1.5} />
               </button>
             </div>
-            <nav className="p-3 space-y-0.5">
+
+            {/* Drawer Links */}
+            <nav className="space-y-1 p-4">
+              <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#A0937F]">Main Menu</p>
               {navItems.map((item) => (
-                <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#1E293B] active:scale-[0.98] active:bg-[#E8F0FE] transition-all">
-                  <item.icon className="w-4 h-4 text-[#94A3B8]" strokeWidth={1.5} />
-                  {item.label}
-                </Link>
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  Icon={item.icon}
+                  active={isRouteActive(pathname, item.href)}
+                  onClick={() => setMobileOpen(false)}
+                  variant="mobile"
+                />
               ))}
-              <div className="pt-3 mt-3 border-t border-[#E2E8F0]">
+
+              <div className="mt-4 border-t border-[#E8E2D9] pt-4">
+                <Link
+                  href="/"
+                  onClick={() => setMobileOpen(false)}
+                  className="mb-1 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-medium text-[#665C52] transition-all hover:bg-[#F1EBE1] active:scale-[0.98]"
+                >
+                  <ArrowLeft className="h-4 w-4 text-[#A0937F]" strokeWidth={1.5} />
+                  Visit Store
+                </Link>
                 <form action={adminLogout}>
-                  <button className="flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm text-[#94A3B8] hover:bg-red-50 hover:text-red-500 active:scale-[0.98] transition-all">
-                    <LogOut className="w-4 h-4" />Sign Out
+                  <button className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-medium text-[#A0937F] transition-all hover:bg-red-50 hover:text-red-500 active:scale-[0.98]">
+                    <LogOut className="h-4 w-4" strokeWidth={1.5} />
+                    Sign Out
                   </button>
                 </form>
               </div>
@@ -101,3 +240,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
+
+/*
+  If motion-safe:animate-spin-slow isn't defined in your tailwind.config yet, add:
+
+  theme: {
+    extend: {
+      animation: { "spin-slow": "spin 6s linear infinite" },
+    },
+  }
+*/
