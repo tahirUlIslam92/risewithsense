@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/shop/Navbar";
 import { Footer } from "@/components/shop/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { getCartItems } from "@/app/actions/cart";
+import { useCartStore } from "@/hooks/useCartStore";
 import { User, Phone, MapPin, Home, CreditCard, ArrowRight, Check } from "lucide-react";
 
 const CITIES = ["Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad", "Peshawar", "Quetta", "Multan"];
@@ -29,7 +29,7 @@ function CheckoutSkeleton() {
 function CheckoutForm() {
   const router = useRouter();
   const { user, signInWithGoogle } = useAuth();
-  const [items, setItems] = useState<any[] | null>(null);
+  const { items, setUserId, fetchFromDB, clearCart, getSubtotal } = useCartStore();
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -38,24 +38,21 @@ function CheckoutForm() {
 
   useEffect(() => {
     if (user) {
+      setUserId(user.id);
       setLoading(true);
-      getCartItems().then(data => {
-        setItems(data || []);
-        setLoading(false);
-      });
+      fetchFromDB().then(() => setLoading(false));
     } else {
-      setItems([]);
       setLoading(false);
     }
   }, [user]);
 
-  const subtotal = items ? items.reduce((sum, item) => sum + Number(item.products.price) * item.quantity, 0) : 0;
+  const subtotal = getSubtotal();
   const shipping = subtotal > 5000 ? 0 : 200;
   const total = subtotal + shipping;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!items || items.length === 0) return;
+    if (items.length === 0) return;
     setPlacing(true);
     setError("");
 
@@ -74,6 +71,7 @@ function CheckoutForm() {
       });
 
       if (res.ok) {
+        clearCart();
         setSuccess(true);
         setTimeout(() => router.push("/order-confirmation"), 1000);
       } else {
@@ -102,7 +100,7 @@ function CheckoutForm() {
     );
   }
 
-  if (loading || items === null) return <CheckoutSkeleton />;
+  if (loading) return <CheckoutSkeleton />;
 
   if (items.length === 0) {
     return (
@@ -121,7 +119,7 @@ function CheckoutForm() {
 
       <form onSubmit={submit} className="space-y-5">
         {error && (
-          <div className="bg-red-50 text-red-600 text-sm p-4 rounded-2xl animate-shake">{error}</div>
+          <div className="bg-red-50 text-red-600 text-sm p-4 rounded-2xl">{error}</div>
         )}
 
         {/* Contact */}
