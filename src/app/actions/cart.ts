@@ -6,17 +6,21 @@ import { revalidatePath } from "next/cache";
 export async function addToCart(productId: string, quantity: number = 1) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  
   if (!user) return { error: "Please sign in" };
 
-  const { error } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from("cart_items")
     .upsert({
       user_id: user.id,
       product_id: productId,
       quantity,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id,product_id" });
+    }, { onConflict: "user_id,product_id" })
+    .select();
 
+  console.log("ADD TO CART:", { user: user.id, productId, error, data });
+  
   if (error) return { error: error.message };
   revalidatePath("/cart");
   return { success: true };
@@ -27,12 +31,14 @@ export async function getCartItems() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from("cart_items")
     .select("*, products(*)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
+  console.log("GET CART:", { user: user.id, count: data?.length, error });
+  
   return data || [];
 }
 

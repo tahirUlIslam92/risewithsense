@@ -5,12 +5,15 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient();
     const body = await request.json();
-    console.log("Order body:", JSON.stringify(body, null, 2));
     const { customerName, customerPhone, customerCity, customerAddr, items, total } = body;
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id;
 
     // 1. Create order with manual ID
     const orderId = crypto.randomUUID();
-    const { data: order, error: orderError } = await supabase
+    const { error: orderError } = await supabase
       .from("orders")
       .insert({
         id: orderId,
@@ -23,9 +26,7 @@ export async function POST(request: NextRequest) {
         payment_method: "cod",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+      });
 
     if (orderError) {
       return NextResponse.json({ error: orderError.message }, { status: 400 });
@@ -33,26 +34,21 @@ export async function POST(request: NextRequest) {
 
     // 2. Create order items + update stock
     for (const item of items) {
-      const { error: itemError } = await supabase.from("order_items").insert({
+      await supabase.from("order_items").insert({
         id: crypto.randomUUID(),
-        order_id: order.id,
+        order_id: orderId,
         product_id: item.productId,
         quantity: item.quantity,
         price: 0,
       });
 
-      if (itemError) {
-        return NextResponse.json({ error: itemError.message }, { status: 400 });
-      }
-
-      // Get current stock
+      // Decrement stock
       const { data: product } = await supabase
         .from("products")
         .select("stock_qty")
         .eq("id", item.productId)
         .single();
 
-      // Decrement stock
       if (product) {
         const newStock = Math.max(0, product.stock_qty - item.quantity);
         await supabase
@@ -62,7 +58,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, orderId: order.id });
+    // 3. Clear cart after successful order
+    if (userId) {
+      await (supabase as any)
+        .from("cart_items")
+        .delete()
+        .eq("user_id", userId);
+    }
+
+    return NextResponse.json({ success: true, orderId });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

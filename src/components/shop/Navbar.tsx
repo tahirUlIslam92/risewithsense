@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, ShoppingBag } from "lucide-react";
+import { Menu, X, ShoppingBag, Package } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getCartItems } from "@/app/actions/cart";
 
@@ -19,19 +19,32 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [cartLoading, setCartLoading] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
   const router = useRouter();
+  const { user, signInWithGoogle } = useAuth();
 
-  // Fetch cart count from database
-  useEffect(() => {
-    if (user) {
-      getCartItems().then(items => setCartCount(items.length));
-    } else {
-      setCartCount(0);
+  const fetchCartItems = async () => {
+    if (!user) {
+      setCartItems([]);
+      return;
     }
-  }, [user, pathname]); // Re-fetch on route change
+    setCartLoading(true);
+    const data = await getCartItems();
+    setCartItems(data || []);
+    setCartLoading(false);
+  };
+
+  // Fetch on route change + user change
+  useEffect(() => {
+    fetchCartItems();
+  }, [user, pathname]);
+
+  // Refetch when cart drawer opens
+  useEffect(() => {
+    if (cartOpen) fetchCartItems();
+  }, [cartOpen]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -40,6 +53,8 @@ export function Navbar() {
   }, []);
 
   useEffect(() => { setIsOpen(false); }, [pathname]);
+
+  const cartCount = cartItems.length;
 
   return (
     <>
@@ -61,7 +76,6 @@ export function Navbar() {
               </Link>
             </div>
 
-            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-1">
               {LINKS.map((link) => {
                 const isActive = pathname.includes(link.href.split("=")[1]);
@@ -75,14 +89,23 @@ export function Navbar() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button onClick={() => setCartOpen(true)} className="relative p-2" aria-label="Open cart">
-                <ShoppingBag className="w-5 h-5 text-[#1A1A1A]" strokeWidth={1.5} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-[#8B7355] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
+              {user ? (
+                <>
+                  <Link href="/my-orders" className="hidden md:flex items-center gap-1.5 text-xs text-[#666] hover:text-[#8B7355] uppercase tracking-wider font-medium transition-colors">
+                    <Package className="w-3.5 h-3.5" />My Orders
+                  </Link>
+                  <button onClick={() => setCartOpen(true)} className="relative p-2" aria-label="Open cart">
+                    <ShoppingBag className="w-5 h-5 text-[#1A1A1A]" strokeWidth={1.5} />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-[#8B7355] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <button onClick={signInWithGoogle} className="text-xs text-[#8B7355] font-medium">Sign In</button>
+              )}
             </div>
           </div>
         </nav>
@@ -99,11 +122,13 @@ export function Navbar() {
             </div>
             <div className="p-4 space-y-1">
               {LINKS.map((link) => (
-                <Link key={link.href} href={link.href}
-                  className="block px-4 py-3 rounded-xl text-sm font-medium text-[#666] hover:bg-[#F8F5F0]">
-                  {link.label}
-                </Link>
+                <Link key={link.href} href={link.href} className="block px-4 py-3 rounded-xl text-sm font-medium text-[#666] hover:bg-[#F8F5F0]">{link.label}</Link>
               ))}
+              {user && (
+                <Link href="/my-orders" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-[#666] hover:bg-[#F8F5F0]">
+                  <Package className="w-4 h-4" />My Orders
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -118,15 +143,58 @@ export function Navbar() {
               <h3 className="font-semibold">Cart ({cartCount})</h3>
               <button onClick={() => setCartOpen(false)}><X className="w-5 h-5" strokeWidth={1.5} /></button>
             </div>
+
             <div className="flex-1 p-4 overflow-y-auto">
-              <p className="text-center text-[#999] mt-10">Open cart page to view items</p>
+              {!user ? (
+                <div className="text-center mt-10">
+                  <p className="text-[#999] mb-4">Sign in to view your cart</p>
+                  <button onClick={signInWithGoogle} className="text-sm text-[#8B7355] font-medium">Sign in with Google</button>
+                </div>
+              ) : cartLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex gap-3 p-3 bg-[#F8F5F0] rounded-xl animate-pulse">
+                      <div className="w-14 h-14 bg-[#E8E4DF] rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-[#E8E4DF] rounded w-2/3" />
+                        <div className="h-3 bg-[#E8E4DF] rounded w-1/3" />
+                        <div className="h-3 bg-[#E8E4DF] rounded w-1/4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : cartItems.length === 0 ? (
+                <p className="text-center text-[#999] mt-10">Your cart is empty</p>
+              ) : (
+                <div className="space-y-3">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex gap-3 p-3 bg-[#F8F5F0] rounded-xl">
+                      <div className="w-14 h-14 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                        {item.products?.images?.[0] ? (
+                          <img src={item.products.images[0]} alt={item.products.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <ShoppingBag className="w-6 h-6 text-[#8B7355]/40" strokeWidth={1.5} />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{item.products?.name}</p>
+                        <p className="text-xs text-[#8B7355] font-semibold">Rs. {Number(item.products?.price || 0).toLocaleString()}</p>
+                        <p className="text-[10px] text-[#999]">Qty: {item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="p-4 border-t border-[#EEE] bg-white">
-              <Link href="/cart" onClick={() => setCartOpen(false)}
-                className="block w-full py-3 bg-[#1A1A1A] text-white text-center text-xs uppercase tracking-wider rounded-full font-medium hover:bg-[#8B7355] transition-colors">
-                View Cart
-              </Link>
-            </div>
+
+            {cartItems.length > 0 && (
+              <div className="p-4 border-t border-[#EEE] bg-white">
+                <Link href="/cart" onClick={() => setCartOpen(false)}
+                  className="block w-full py-3 bg-[#1A1A1A] text-white text-center text-xs uppercase tracking-wider rounded-full font-medium hover:bg-[#8B7355] transition-colors">
+                  View Cart
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
